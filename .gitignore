@@ -1,0 +1,124 @@
+# --- Python ---
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+wheels/
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# pipenv / poetry
+Pipfile.lock
+poetry.lock
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*,cover
+htmlcov/
+
+# Mypy / pyright / type checkers
+.mypy_cache/
+.pyrightcache/
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# dotenv / secrets
+.env
+.env.*.local
+
+# tox / nox
+.tox/
+.nox/
+
+# caches
+.cache/
+__pypackages__/
+
+# logs
+*.log
+
+# Rope
+.ropeproject
+
+# pytest
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Django stuff:
+*.sqlite3
+local_settings.py
+db.sqlite3
+
+# Flask
+instance/
+.webassets-cache
+
+# Sphinx
+docs/_build/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Gunicorn / Uvicorn / ASGI
+*.pid
+*.pid.lock
+*.sock
+gunicorn*.log
+gunicorn.pid
+gunicorn.sock
+uvicorn.log
+uvicorn.pid
+uvicorn.sock
+
+# --- "uv" package manager (generic entries) ---
+# (If your "uv" package manager creates specific files/folders, add them here)
+.uv/
+uv.lock
+uv.lock.json
+uv_modules/
+uv-cache/
+uv.log
+
+# Add project-specific ignores below
