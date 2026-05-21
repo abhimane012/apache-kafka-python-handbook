@@ -1,41 +1,36 @@
 from confluent_kafka.admin import AdminClient, NewTopic
 
 
-class Admin:
+class KafkaAdmin:
 
-    def __init__(self, bootstrap_server: str) -> None:
-        # Store Kafka broker address
-        # Example: localhost:9092
-        self.bootstrap_server = bootstrap_server
+    def __init__(self, bootstrap_servers: str) -> None:
+        # Kafka broker address (e.g. localhost:9092)
+        self.bootstrap_servers = bootstrap_servers
 
-        # Create Kafka Admin client
-        # This client is used for admin operations
-        # like creating topics, deleting topics, etc.
-        self.admin = AdminClient(
-            {'bootstrap.servers': self.bootstrap_server}
+        # Admin client used for Kafka operations
+        self.admin_client = AdminClient(
+            conf={'bootstrap.servers': self.bootstrap_servers}
         )
 
-    def topic_exists(self, topic: str) -> bool:
-        # Get metadata for all topics from Kafka
-        all_topics = self.admin.list_topics()
+    def topic_exists(self, topic_name: str) -> bool:
+        # Fetch metadata for all topics from Kafka cluster
+        cluster_metadata = self.admin_client.list_topics()
 
-        # Check whether the topic exists
-        # in the list of available topics
-        return topic in all_topics.topics.keys()
+        # Check if topic exists in cluster
+        return topic_name in cluster_metadata.topics.keys()
 
-    def create_topic(self, topic: str) -> None:
+    def create_topic(self, topic_name: str) -> None:
 
-        # Create topic only if it does not exist
-        if not self.topic_exists(topic):
+        # Create topic only if it does not already exist
+        if not self.topic_exists(topic_name):
 
-            # Create topic object
-            new_topics = NewTopic(topic)
+            # Define new topic
+            new_topic = NewTopic(topic_name)
 
-            # Kafka accepts a list because
-            # multiple topics can be created together
-            self.admin.create_topics([new_topics])
+            # Kafka allows creating multiple topics at once
+            self.admin_client.create_topics([new_topic])
 
-            print(f"Topic: {topic} has been created")
+            print(f"Topic created: {topic_name}")
 
         else:
-            print(f"Topic: {topic} already exists")
+            print(f"Topic already exists: {topic_name}")
