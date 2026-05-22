@@ -2,7 +2,6 @@ from confluent_kafka import Consumer
 
 
 class KafkaConsumerClient:
-
     def __init__(self, bootstrap_servers: str, group_id: str, topic_name: str) -> None:
         # Kafka broker address
         self.bootstrap_servers = bootstrap_servers
@@ -14,12 +13,11 @@ class KafkaConsumerClient:
         self.topic_name = topic_name
 
         # Kafka Consumer instance
-        self.consumer = Consumer({
-            "bootstrap.servers": self.bootstrap_servers,
-            "group.id": self.group_id
-        })
+        self.consumer = Consumer(
+            {"bootstrap.servers": self.bootstrap_servers, "group.id": self.group_id}
+        )
 
-    def subscribe_topic(self, topic_name: str) -> None:
+    def subscribe_topic(self) -> None:
         # Subscribe consumer to a Kafka topic
         # (uses instance topic_name in this simple design)
         self.consumer.subscribe([self.topic_name])
@@ -52,20 +50,15 @@ class KafkaConsumerClient:
 
 
 if __name__ == "__main__":
-
     bootstrap_servers = "localhost:19092"
     topic_name = "test-topic"
     group_id = "my-group-id"
 
     # Create consumer client
-    kafka_consumer = KafkaConsumerClient(
-        bootstrap_servers,
-        group_id,
-        topic_name
-    )
+    kafka_consumer = KafkaConsumerClient(bootstrap_servers, group_id, topic_name)
 
     # Subscribe to topic
-    kafka_consumer.subscribe_topic(topic_name)
+    kafka_consumer.subscribe_topic()
 
     # Start consuming messages
     kafka_consumer.consume_messages()
