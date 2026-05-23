@@ -50,10 +50,12 @@ class KafkaSchemaRegistryClient:
 
                 # Register schema in schema registry
                 self.schema_registry_client.register_schema(self.subject_name, schema)
-
+                print("Schema Registerd Successfully")
             except SchemaRegistryError as error:
                 # Print schema registration error
                 print(error)
+        else:
+            print("Schema already registered")
 
 
 if __name__ == "__main__":
