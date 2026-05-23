@@ -8,15 +8,20 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 
 from uuid import uuid4
 
-import time
 
+def delivery_callback(error, message) -> None:
 
-def delivery_callback(err, msg):
-    if err:
-        print(f"Error while sending msg to kafka {msg.key()}")
+    # If message delivery fails
+    if error:
+        print(f"Error while sending message to Kafka: {message.key()}")
 
+    # Print delivery metadata
     print(
-        f"Message delivered succsfully at Topic={msg.topic()}, Key={msg.key()}, Offset={msg.offset()}, Partition={msg.partition()}"
+        f"Message delivered successfully "
+        f"Topic={message.topic()}, "
+        f"Key={message.key()}, "
+        f"Offset={message.offset()}, "
+        f"Partition={message.partition()}"
     )
 
 
@@ -33,7 +38,8 @@ class User:
         self.age = age
 
     def get_dict(self) -> dict:
-        # Convert object into dictionary
+
+        # Convert object to dictionary
         return dict(
             user_id=self.user_id,
             first_name=self.first_name,
@@ -50,13 +56,26 @@ class KafkaAVROProducerClient(KafkaProducerClient):
         topic_name: str,
         schema_registry_client,
         schema_definition: str,
+        message_size: int | None = None,
+        compression_type: str | None = None,
+        batch_size: int | None = None,
+        linger_ms: int | None = None,
     ) -> None:
 
-        # Initialize parent producer class
-        super().__init__(bootstrap_servers, topic_name)
+        # Initialize base Kafka producer
+        super().__init__(
+            bootstrap_servers,
+            topic_name,
+            message_size,
+            compression_type,
+            batch_size,
+            linger_ms,
+        )
 
+        # Store schema registry client
         self.schema_registry_client = schema_registry_client
 
+        # Store schema definition
         self.schema_definition = schema_definition
 
         # Create AVRO serializer
@@ -66,29 +85,36 @@ class KafkaAVROProducerClient(KafkaProducerClient):
 
     def send_message(self, message: dict) -> None:
 
+        avro_message = None
+
         try:
-            # Convert dictionary into AVRO bytes
+            # Convert dict to AVRO bytes
             avro_message = self.avro_serializer(
                 message, SerializationContext(self.topic_name, MessageField.VALUE)
             )
 
-            # Send AVRO message to Kafka
+            # Log message size
+            print(f"Message size: {len(avro_message) / (1024 * 1024)} MB")
+
+            # Produce message to Kafka
             self.producer.produce(
                 topic=self.topic_name,
                 value=avro_message,
+                # Unique key
                 key=str(uuid4()),
+                # Metadata header
                 headers={"correlation_id": str(uuid4())},
+                # Callback after delivery
                 callback=delivery_callback,
             )
 
-            print(f"AVRO message sent: {avro_message}")
+            print("AVRO message sent successfully")
 
         except Exception as error:
-            # Print error if sending fails
-            print(error)
+            print(error, (len(avro_message) / (1024 * 1024) if avro_message else "N/A"))
 
     def flush(self) -> None:
-        # Ensure all pending messages are sent
+        # Flush pending messages
         self.producer.flush()
 
 
@@ -101,52 +127,48 @@ if __name__ == "__main__":
 
     schema_type = "AVRO"
 
-    # Create topic if not available
+    # Create topic
     kafka_admin = KafkaAdmin(bootstrap_servers)
-
     kafka_admin.create_topic(topic_name)
 
-    # Read AVRO schema file
+    # Load schema
     with open("schema.avsc") as schema_file:
         schema_definition = schema_file.read()
 
     # Register schema
-    schema_registry = KafkaSchemaRegistryClient(
+    kafka_schema_registry = KafkaSchemaRegistryClient(
         schema_registry_url, topic_name, schema_definition, schema_type
     )
 
-    schema_registry.register_schema()
+    kafka_schema_registry.register_schema()
 
-    # Create Kafka producer
+    # Create producer
     kafka_producer = KafkaAVROProducerClient(
         bootstrap_servers,
         topic_name,
-        schema_registry.schema_registry_client,
+        kafka_schema_registry.schema_registry_client,
         schema_definition,
+        message_size=10 * 1024 * 1024,
+        compression_type="snappy",
+        batch_size=1_000_000,
+        linger_ms=30_000,
     )
 
     try:
-        # Continuously read user details
         while True:
             user_id = int(input("Enter user id: "))
 
             first_name = input("Enter first name: ")
-
             middle_name = input("Enter middle name: ")
-
             last_name = input("Enter last name: ")
 
             age = int(input("Enter age: "))
 
-            # Create user object
             user = User(user_id, first_name, middle_name, last_name, age)
 
-            # Send user data
             kafka_producer.send_message(user.get_dict())
 
     except KeyboardInterrupt:
-        # Stop safely on Ctrl + C
         pass
 
-    # Send remaining messages
     kafka_producer.flush()
