@@ -6,6 +6,8 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 
 from confluent_kafka.serialization import SerializationContext, MessageField
 
+from uuid import uuid4
+
 
 class User:
     def __init__(
@@ -60,7 +62,12 @@ class KafkaAVROProducerClient(KafkaProducerClient):
             )
 
             # Send AVRO message to Kafka
-            self.producer.produce(self.topic_name, avro_message)
+            self.producer.produce(
+                topic=self.topic_name,
+                value=avro_message,
+                key=str(uuid4()),
+                headers={"correlation_id": str(uuid4())},
+            )
 
             print(f"AVRO message sent: {avro_message}")
 
