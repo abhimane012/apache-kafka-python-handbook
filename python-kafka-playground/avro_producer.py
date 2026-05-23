@@ -8,6 +8,17 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 
 from uuid import uuid4
 
+import time
+
+
+def delivery_callback(err, msg):
+    if err:
+        print(f"Error while sending msg to kafka {msg.key()}")
+
+    print(
+        f"Message delivered succsfully at Topic={msg.topic()}, Key={msg.key()}, Offset={msg.offset()}, Partition={msg.partition()}"
+    )
+
 
 class User:
     def __init__(
@@ -67,6 +78,7 @@ class KafkaAVROProducerClient(KafkaProducerClient):
                 value=avro_message,
                 key=str(uuid4()),
                 headers={"correlation_id": str(uuid4())},
+                callback=delivery_callback,
             )
 
             print(f"AVRO message sent: {avro_message}")
