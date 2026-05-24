@@ -31,7 +31,9 @@ class KafkaAdmin:
             # Kafka accepts a list
             # because multiple topics
             # can be created together
-            self.admin_client.create_topics([new_topic],)
+            self.admin_client.create_topics(
+                [new_topic],
+            )
 
             print(f"Topic created: {topic_name}")
 
