@@ -14,7 +14,11 @@ class KafkaConsumerClient:
 
         # Kafka Consumer instance
         self.consumer = Consumer(
-            {"bootstrap.servers": self.bootstrap_servers, "group.id": self.group_id}
+            {
+                "bootstrap.servers": self.bootstrap_servers,
+                "group.id": self.group_id,
+                "auto.offset.reset": "earliest",
+            }
         )
 
     def subscribe_topic(self) -> None:
