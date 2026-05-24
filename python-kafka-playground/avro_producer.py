@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # Create topic
     kafka_admin = KafkaAdmin(bootstrap_servers)
 
-    kafka_admin.create_topic(topic_name)
+    kafka_admin.create_topic(topic_name, 2)
 
     # Read schema file
     with open("schema.avsc") as schema_file:

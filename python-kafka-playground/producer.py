@@ -20,7 +20,10 @@ class KafkaProducerClient:
         self.topic_name = topic_name
 
         # Producer configuration
-        producer_config: dict = {"bootstrap.servers": self.bootstrap_servers}
+        producer_config: dict = {
+            "bootstrap.servers": self.bootstrap_servers,
+            "partitioner": "consistent_random",
+        }
 
         # Max message size
         if message_size:
