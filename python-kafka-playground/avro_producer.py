@@ -11,11 +11,11 @@ from uuid import uuid4
 
 def delivery_callback(error, message) -> None:
 
-    # If message delivery fails
+    # Print error if delivery fails
     if error:
         print(f"Error while sending message to Kafka: {message.key()}")
 
-    # Print delivery metadata
+    # Print message metadata
     print(
         f"Message delivered successfully "
         f"Topic={message.topic()}, "
@@ -39,7 +39,7 @@ class User:
 
     def get_dict(self) -> dict:
 
-        # Convert object to dictionary
+        # Convert object into dictionary
         return dict(
             user_id=self.user_id,
             first_name=self.first_name,
@@ -62,7 +62,7 @@ class KafkaAVROProducerClient(KafkaProducerClient):
         linger_ms: int | None = None,
     ) -> None:
 
-        # Initialize base Kafka producer
+        # Initialize base producer
         super().__init__(
             bootstrap_servers,
             topic_name,
@@ -83,28 +83,32 @@ class KafkaAVROProducerClient(KafkaProducerClient):
             self.schema_registry_client, self.schema_definition
         )
 
-    def send_message(self, message: dict) -> None:
+    def send_message(
+        self, key: int | str | None = None, message_value: dict | None = None
+    ) -> None:
 
         avro_message = None
 
         try:
-            # Convert dict to AVRO bytes
-            avro_message = self.avro_serializer(
-                message, SerializationContext(self.topic_name, MessageField.VALUE)
-            )
+            # Serialize only when
+            # message data exists
+            if message_value:
+                avro_message = self.avro_serializer(
+                    message_value,
+                    SerializationContext(self.topic_name, MessageField.VALUE),
+                )
 
-            # Log message size
-            print(f"Message size: {len(avro_message) / (1024 * 1024)} MB")
+                # Print message size
+                print(f"Message size: {len(avro_message) / (1024 * 1024)} MB")
 
-            # Produce message to Kafka
+            # Send message
+            # value=None creates
+            # a Kafka tombstone event
             self.producer.produce(
                 topic=self.topic_name,
                 value=avro_message,
-                # Unique key
-                key=str(uuid4()),
-                # Metadata header
+                key=str(key),
                 headers={"correlation_id": str(uuid4())},
-                # Callback after delivery
                 callback=delivery_callback,
             )
 
@@ -114,6 +118,7 @@ class KafkaAVROProducerClient(KafkaProducerClient):
             print(error, (len(avro_message) / (1024 * 1024) if avro_message else "N/A"))
 
     def flush(self) -> None:
+
         # Flush pending messages
         self.producer.flush()
 
@@ -129,9 +134,10 @@ if __name__ == "__main__":
 
     # Create topic
     kafka_admin = KafkaAdmin(bootstrap_servers)
+
     kafka_admin.create_topic(topic_name)
 
-    # Load schema
+    # Read schema file
     with open("schema.avsc") as schema_file:
         schema_definition = schema_file.read()
 
@@ -151,22 +157,33 @@ if __name__ == "__main__":
         message_size=10 * 1024 * 1024,
         compression_type="snappy",
         batch_size=1_000_000,
-        linger_ms=30_000,
+        linger_ms=1000,
     )
 
     try:
         while True:
-            user_id = int(input("Enter user id: "))
+            choice = input("Do you want 'insert' or 'delete' (Tombstone): ")
 
-            first_name = input("Enter first name: ")
-            middle_name = input("Enter middle name: ")
-            last_name = input("Enter last name: ")
+            if choice == "insert":
+                user_id = int(input("Enter user id: "))
 
-            age = int(input("Enter age: "))
+                first_name = input("Enter first name: ")
 
-            user = User(user_id, first_name, middle_name, last_name, age)
+                middle_name = input("Enter middle name: ")
 
-            kafka_producer.send_message(user.get_dict())
+                last_name = input("Enter last name: ")
+
+                age = int(input("Enter age: "))
+
+                user = User(user_id, first_name, middle_name, last_name, age)
+
+                kafka_producer.send_message(key=user_id, message_value=user.get_dict())
+
+            elif choice == "delete":
+                user_id = int(input("Enter user id: "))
+
+                # Send tombstone event
+                kafka_producer.send_message(key=user_id)
 
     except KeyboardInterrupt:
         pass
