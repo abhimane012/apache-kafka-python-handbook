@@ -37,3 +37,22 @@ services:
       - 8080:8080
     depends_on:
       - redpanda
+  ksqldb-server:
+    image: confluentinc/ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      - redpanda
+    ports:
+      - 8088:8088
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: redpanda:19092
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://redpanda:18081
+      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+  ksqldb-cli:
+   image: confluentinc/cp-ksqldb-server
+   container_name: ksqldb-cli
+   depends_on:
+    - ksqldb-server
+   entrypoint: /bin/sh
+   tty: true
